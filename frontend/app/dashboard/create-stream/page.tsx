@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { ShieldAlert } from "lucide-react";
+import { useProtocolStatus } from "@/lib/use-protocol-status";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface FormData {
@@ -126,7 +128,6 @@ function ProgressPill({ step }: { step: number }) {
         const active = step === s.number;
         return (
           <div key={s.number} className="flex items-center gap-1">
-            {/* Connector */}
             {i > 0 && (
               <div
                 className="h-px w-6 transition-all duration-500"
@@ -137,13 +138,12 @@ function ProgressPill({ step }: { step: number }) {
                 }}
               />
             )}
-            {/* Pill segment */}
             <div
               className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-all duration-300 ${active
-                  ? "bg-cyan-400 text-black"
-                  : done
-                    ? "bg-cyan-400/20 text-cyan-400"
-                    : "text-white/30"
+                ? "bg-cyan-400 text-black"
+                : done
+                  ? "bg-cyan-400/20 text-cyan-400"
+                  : "text-white/30"
                 }`}
               style={active ? { boxShadow: "0 0 16px rgba(34,211,238,0.5)" } : undefined}
             >
@@ -161,7 +161,7 @@ function ProgressPill({ step }: { step: number }) {
   );
 }
 
-// ─── Slide wrapper (CSS-based framer-motion equivalent) ───────────────────────
+// ─── Slide wrapper ────────────────────────────────────────────────────────────
 function SlidePanel({
   children,
   direction,
@@ -254,7 +254,6 @@ function GlassInput({
 }
 
 // ─── Stellar address validator ────────────────────────────────────────────────
-// A valid Stellar address starts with G, is 56 chars, and is base32 (A-Z2-7)
 function isValidStellarAddress(addr: string): boolean {
   return /^G[A-Z2-7]{55}$/.test(addr.trim());
 }
@@ -275,7 +274,6 @@ function StreamSplitter({
 
   return (
     <div className="space-y-3">
-      {/* Toggle row */}
       <div className="flex items-center justify-between">
         <div>
           <p className="font-body text-[10px] tracking-[0.12em] text-white/50 uppercase">
@@ -285,7 +283,6 @@ function StreamSplitter({
             Route a portion to a second wallet
           </p>
         </div>
-        {/* Toggle switch */}
         <button
           type="button"
           role="switch"
@@ -299,9 +296,7 @@ function StreamSplitter({
             borderColor: form.splitEnabled
               ? "rgba(34,211,238,0.5)"
               : "rgba(255,255,255,0.12)",
-            boxShadow: form.splitEnabled
-              ? "0 0 12px rgba(34,211,238,0.2)"
-              : "none",
+            boxShadow: form.splitEnabled ? "0 0 12px rgba(34,211,238,0.2)" : "none",
           }}
         >
           <span
@@ -317,7 +312,6 @@ function StreamSplitter({
         </button>
       </div>
 
-      {/* Expanded panel */}
       {form.splitEnabled && (
         <div
           className="rounded-2xl border border-cyan-400/15 bg-cyan-400/[0.03] p-4 space-y-4"
@@ -330,7 +324,6 @@ function StreamSplitter({
             }
           `}</style>
 
-          {/* Split percentage slider */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <p className="font-body text-[10px] tracking-[0.1em] text-white/40 uppercase">
@@ -347,7 +340,6 @@ function StreamSplitter({
               </div>
             </div>
 
-            {/* Custom slider */}
             <div className="relative py-2">
               <div
                 className="absolute top-1/2 left-0 right-0 h-1.5 -translate-y-1/2 rounded-full overflow-hidden"
@@ -393,7 +385,6 @@ function StreamSplitter({
               `}</style>
             </div>
 
-            {/* Tick marks */}
             <div className="flex justify-between">
               {[0, 10, 20, 30, 40, 50].map((v) => (
                 <button
@@ -407,39 +398,27 @@ function StreamSplitter({
               ))}
             </div>
 
-            {/* Split preview mini-bar */}
             {form.splitPercent > 0 && (
               <div className="flex items-center gap-2 pt-1">
                 <div className="flex-1 h-1.5 rounded-full overflow-hidden flex">
                   <div
                     className="h-full rounded-l-full"
-                    style={{
-                      width: `${100 - form.splitPercent}%`,
-                      background: "rgba(34,211,238,0.35)",
-                    }}
+                    style={{ width: `${100 - form.splitPercent}%`, background: "rgba(34,211,238,0.35)" }}
                   />
                   <div
                     className="h-full rounded-r-full"
-                    style={{
-                      width: `${form.splitPercent}%`,
-                      background: "linear-gradient(90deg,#6366f1,#8b5cf6)",
-                    }}
+                    style={{ width: `${form.splitPercent}%`, background: "linear-gradient(90deg,#6366f1,#8b5cf6)" }}
                   />
                 </div>
                 <div className="flex items-center gap-2 text-[9px] font-body flex-shrink-0">
-                  <span className="text-cyan-400/70">
-                    {100 - form.splitPercent}% primary
-                  </span>
+                  <span className="text-cyan-400/70">{100 - form.splitPercent}% primary</span>
                   <span className="text-white/20">·</span>
-                  <span className="text-indigo-400/70">
-                    {form.splitPercent}% split
-                  </span>
+                  <span className="text-indigo-400/70">{form.splitPercent}% split</span>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Split address input */}
           <div className="space-y-1.5">
             <p className="font-body text-[10px] tracking-[0.1em] text-white/40 uppercase">
               Split Recipient Address
@@ -476,12 +455,8 @@ function StreamSplitter({
                 className="flex-1 bg-transparent font-body text-sm text-white/90 outline-none placeholder:text-white/15 font-mono"
                 style={{ caretColor: "#22d3ee", letterSpacing: "0.02em" }}
               />
-              {addressValid && (
-                <span className="text-cyan-400 text-sm flex-shrink-0">✓</span>
-              )}
-              {addressError && (
-                <span className="text-red-400 text-sm flex-shrink-0">✗</span>
-              )}
+              {addressValid && <span className="text-cyan-400 text-sm flex-shrink-0">✓</span>}
+              {addressError && <span className="text-red-400 text-sm flex-shrink-0">✗</span>}
             </div>
             {addressError && (
               <p className="font-body text-xs text-red-400/80">
@@ -489,9 +464,7 @@ function StreamSplitter({
               </p>
             )}
             {addressValid && (
-              <p className="font-body text-xs text-cyan-400/60">
-                Valid Stellar address ✓
-              </p>
+              <p className="font-body text-xs text-cyan-400/60">Valid Stellar address ✓</p>
             )}
           </div>
         </div>
@@ -519,8 +492,8 @@ function Step1({
                 key={a.symbol}
                 onClick={() => update({ asset: a.symbol })}
                 className={`relative flex flex-col items-center gap-2 rounded-2xl border p-3.5 transition-all duration-200 ${active
-                    ? "border-cyan-400/50 bg-cyan-400/10"
-                    : "border-white/8 bg-white/[0.02] hover:border-white/15 hover:bg-white/[0.04]"
+                  ? "border-cyan-400/50 bg-cyan-400/10"
+                  : "border-white/8 bg-white/[0.02] hover:border-white/15 hover:bg-white/[0.04]"
                   }`}
                 style={active ? { boxShadow: "0 0 20px rgba(34,211,238,0.18), inset 0 0 20px rgba(34,211,238,0.04)" } : undefined}
               >
@@ -533,9 +506,7 @@ function Step1({
                 <span className={`font-body text-xs font-bold ${active ? "text-cyan-400" : "text-white/60"}`}>
                   {a.symbol}
                 </span>
-                {active && (
-                  <span className="absolute top-2 right-2 text-[8px] text-cyan-400">✓</span>
-                )}
+                {active && <span className="absolute top-2 right-2 text-[8px] text-cyan-400">✓</span>}
               </button>
             );
           })}
@@ -544,10 +515,7 @@ function Step1({
 
       <div className="h-px bg-white/[0.06]" />
 
-      <Field
-        label="Recipient Address"
-        hint="Enter a wallet address or ENS name."
-      >
+      <Field label="Recipient Address" hint="Enter a wallet address or ENS name.">
         <GlassInput
           value={form.recipientAddress}
           onChange={(v) => update({ recipientAddress: v })}
@@ -590,7 +558,6 @@ function Step2({
 
   return (
     <div className="space-y-6">
-      {/* Total amount */}
       <Field label="Total Stream Amount">
         <div
           className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 transition-all focus-within:border-cyan-400/40"
@@ -613,7 +580,6 @@ function Step2({
         </div>
       </Field>
 
-      {/* Rate type selector */}
       <Field label="Displayed Rate">
         <div className="flex gap-2 flex-wrap">
           {(["per-second", "per-minute", "per-hour", "per-day"] as FormData["rateType"][]).map((r) => {
@@ -623,8 +589,8 @@ function Step2({
                 key={r}
                 onClick={() => update({ rateType: r })}
                 className={`rounded-xl border px-3 py-1.5 font-body text-xs font-bold transition-all duration-200 ${active
-                    ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-400"
-                    : "border-white/10 bg-white/[0.03] text-white/40 hover:text-white/70"
+                  ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-400"
+                  : "border-white/10 bg-white/[0.03] text-white/40 hover:text-white/70"
                   }`}
                 style={active ? { boxShadow: "0 0 10px rgba(34,211,238,0.2)" } : undefined}
               >
@@ -635,7 +601,6 @@ function Step2({
         </div>
       </Field>
 
-      {/* Duration presets */}
       <Field label="Duration">
         <div className="flex flex-wrap gap-2">
           {DURATION_PRESETS.map((p) => {
@@ -645,8 +610,8 @@ function Step2({
                 key={p.label}
                 onClick={() => update({ durationPreset: p.label, customEndDate: null })}
                 className={`rounded-xl border px-3 py-2 font-body text-sm font-bold transition-all duration-200 ${active
-                    ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-400"
-                    : "border-white/10 bg-white/[0.03] text-white/40 hover:text-white/70 hover:border-white/20"
+                  ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-400"
+                  : "border-white/10 bg-white/[0.03] text-white/40 hover:text-white/70 hover:border-white/20"
                   }`}
                 style={active ? { boxShadow: "0 0 12px rgba(34,211,238,0.2), inset 0 0 12px rgba(34,211,238,0.04)" } : undefined}
               >
@@ -657,7 +622,6 @@ function Step2({
         </div>
       </Field>
 
-      {/* Live summary */}
       {form.totalAmount && durationSeconds > 0 && (
         <div
           className="rounded-2xl border border-cyan-400/15 bg-cyan-400/[0.04] px-5 py-4 space-y-3"
@@ -723,7 +687,6 @@ function Step3({
         Review your stream parameters before signing the on-chain transaction.
       </p>
 
-      {/* Review table */}
       <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] divide-y divide-white/[0.05] overflow-hidden">
         {rows.map((row) => (
           <div
@@ -747,7 +710,6 @@ function Step3({
         ))}
       </div>
 
-      {/* Warning notice */}
       <div className="flex gap-3 rounded-2xl border border-orange-400/20 bg-orange-400/[0.05] px-4 py-3">
         <span className="text-orange-400 text-sm flex-shrink-0 mt-0.5">⚠</span>
         <p className="font-body text-xs text-orange-300/70 leading-relaxed">
@@ -756,7 +718,6 @@ function Step3({
         </p>
       </div>
 
-      {/* Sign button */}
       <button
         onClick={onSign}
         disabled={signing}
@@ -792,7 +753,6 @@ function SuccessScreen({ form, onReset }: { form: FormData; onReset: () => void 
     >
       <style>{`@keyframes successIn { from { opacity:0; transform:scale(0.88) translateY(16px) } to { opacity:1; transform:scale(1) translateY(0) } }`}</style>
 
-      {/* Icon */}
       <div
         className="h-20 w-20 rounded-full flex items-center justify-center text-3xl"
         style={{
@@ -814,7 +774,6 @@ function SuccessScreen({ form, onReset }: { form: FormData; onReset: () => void 
         </p>
       </div>
 
-      {/* Stream ID mock */}
       <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] px-5 py-3 flex items-center gap-3">
         <span className="font-body text-[10px] text-white/30 uppercase tracking-wider">Stream ID</span>
         <code className="font-body text-xs text-cyan-400">0x4f3a…b92c</code>
@@ -847,15 +806,17 @@ export default function CreateStreamPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [signing, setSigning] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [animKey, setAnimKey] = useState(0); // forces re-mount for animation
+  const [animKey, setAnimKey] = useState(0);
+
+  // ── Emergency gate (#426) ────────────────────────────────────────────────────
+  const { isEmergency } = useProtocolStatus();
 
   const update = useCallback((patch: Partial<FormData>) => {
     setForm((prev) => ({ ...prev, ...patch }));
   }, []);
 
-  const direction = step > prevStep ? "enter" : "enter"; // always enter for simplicity; exit handled by key change
+  const direction = step > prevStep ? "enter" : "enter";
 
-  // ── Validation ──────────────────────────────────────────────────────────────
   const validateStep = (s: number): boolean => {
     const errs: Record<string, string> = {};
     if (s === 1) {
@@ -909,8 +870,32 @@ export default function CreateStreamPage() {
     <div className="min-h-screen p-4 md:p-6 flex flex-col items-center justify-start gap-6">
       <PageNebula />
 
-      {/* Page header */}
-      {!success && (
+      {/* ── Emergency gate (#426) — replaces the whole wizard when active ── */}
+      {isEmergency && (
+        <div className="w-full max-w-2xl">
+          <div
+            className="rounded-3xl border border-red-500/40 bg-red-500/[0.06] backdrop-blur-xl p-6 md:p-8 flex flex-col items-center text-center gap-4"
+            style={{ boxShadow: "0 0 40px rgba(239,68,68,0.12)" }}
+          >
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-red-500/30 bg-red-500/10">
+              <ShieldAlert size={24} className="text-red-400" />
+            </div>
+            <div>
+              <h2 className="font-heading text-2xl text-red-300">Stream Creation Paused</h2>
+              <p className="font-body mt-2 text-sm text-red-200/60 max-w-md">
+                The protocol is currently in Emergency Mode. Creating new streams has been
+                temporarily disabled. Your existing streams and funds are fully safe.
+              </p>
+            </div>
+            <p className="font-body text-xs text-red-400/40 tracking-wider">
+              This page will unlock automatically once the guardian clears the emergency.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Page header — hidden during emergency */}
+      {!isEmergency && !success && (
         <div className="w-full max-w-2xl">
           <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl md:p-8">
             <p className="font-body text-xs tracking-[0.12em] text-white/60 uppercase">New Payment</p>
@@ -922,93 +907,88 @@ export default function CreateStreamPage() {
         </div>
       )}
 
-      {/* Wizard card */}
-      <div className="w-full max-w-2xl">
-        <div
-          className="rounded-3xl border border-white/10 bg-white/[0.04] backdrop-blur-2xl overflow-hidden"
-          style={{
-            boxShadow: success
-              ? "0 0 0 1px rgba(34,211,238,0.15), 0 40px 80px rgba(0,0,0,0.6), 0 0 120px rgba(34,211,238,0.08)"
-              : "0 40px 80px rgba(0,0,0,0.5)",
-          }}
-        >
-          {/* Progress pill header */}
-          {!success && (
-            <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4 md:px-8">
-              <ProgressPill step={step} />
-              <span className="font-body text-xs text-white/30 hidden sm:block">
-                Step {step} of {STEPS.length}
-              </span>
-            </div>
-          )}
-
-          {/* Step content */}
-          <div className="p-6 md:p-8 overflow-hidden">
-            {success ? (
-              <SuccessScreen form={form} onReset={reset} />
-            ) : (
-              <SlidePanel key={animKey} direction="enter" id={animKey}>
-                {/* Step title */}
-                <div className="mb-6">
-                  <p className="font-body text-[10px] tracking-[0.15em] text-cyan-400/70 uppercase mb-1">
-                    Step {step} — {STEPS[step - 1].label}
-                  </p>
-                  <h2 className="font-heading text-2xl md:text-3xl">
-                    {step === 1 && "Who & What?"}
-                    {step === 2 && "How Much & How Long?"}
-                    {step === 3 && "Ready to stream?"}
-                  </h2>
-                </div>
-
-                {/* Error banner */}
-                {Object.keys(errors).length > 0 && (
-                  <div className="mb-5 rounded-xl border border-red-400/20 bg-red-400/[0.06] px-4 py-3">
-                    {Object.values(errors).map((e, i) => (
-                      <p key={i} className="font-body text-xs text-red-400">• {e}</p>
-                    ))}
-                  </div>
-                )}
-
-                {/* Step panels */}
-                {step === 1 && <Step1 form={form} update={update} />}
-                {step === 2 && <Step2 form={form} update={update} />}
-                {step === 3 && <Step3 form={form} onSign={handleSign} signing={signing} />}
-
-                {/* Nav buttons */}
-                {step < 3 && (
-                  <div className="flex gap-3 mt-8">
-                    {step > 1 && (
-                      <button
-                        onClick={goBack}
-                        className="flex-1 rounded-2xl border border-white/10 bg-white/[0.03] py-3.5 font-body text-sm text-white/50 transition hover:bg-white/[0.06] hover:text-white/80"
-                      >
-                        ← Back
-                      </button>
-                    )}
-                    <button
-                      onClick={goNext}
-                      className="flex-1 rounded-2xl bg-cyan-400 py-3.5 font-body text-sm font-bold text-black transition hover:bg-cyan-300"
-                      style={{ boxShadow: "0 0 20px rgba(34,211,238,0.3)" }}
-                    >
-                      Continue →
-                    </button>
-                  </div>
-                )}
-
-                {/* Back button on step 3 */}
-                {step === 3 && (
-                  <button
-                    onClick={goBack}
-                    className="w-full mt-3 rounded-2xl border border-white/10 bg-white/[0.03] py-3 font-body text-sm text-white/40 transition hover:bg-white/[0.06] hover:text-white/70"
-                  >
-                    ← Edit Details
-                  </button>
-                )}
-              </SlidePanel>
+      {/* Wizard card — hidden during emergency */}
+      {!isEmergency && (
+        <div className="w-full max-w-2xl">
+          <div
+            className="rounded-3xl border border-white/10 bg-white/[0.04] backdrop-blur-2xl overflow-hidden"
+            style={{
+              boxShadow: success
+                ? "0 0 0 1px rgba(34,211,238,0.15), 0 40px 80px rgba(0,0,0,0.6), 0 0 120px rgba(34,211,238,0.08)"
+                : "0 40px 80px rgba(0,0,0,0.5)",
+            }}
+          >
+            {!success && (
+              <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4 md:px-8">
+                <ProgressPill step={step} />
+                <span className="font-body text-xs text-white/30 hidden sm:block">
+                  Step {step} of {STEPS.length}
+                </span>
+              </div>
             )}
+
+            <div className="p-6 md:p-8 overflow-hidden">
+              {success ? (
+                <SuccessScreen form={form} onReset={reset} />
+              ) : (
+                <SlidePanel key={animKey} direction="enter" id={animKey}>
+                  <div className="mb-6">
+                    <p className="font-body text-[10px] tracking-[0.15em] text-cyan-400/70 uppercase mb-1">
+                      Step {step} — {STEPS[step - 1].label}
+                    </p>
+                    <h2 className="font-heading text-2xl md:text-3xl">
+                      {step === 1 && "Who & What?"}
+                      {step === 2 && "How Much & How Long?"}
+                      {step === 3 && "Ready to stream?"}
+                    </h2>
+                  </div>
+
+                  {Object.keys(errors).length > 0 && (
+                    <div className="mb-5 rounded-xl border border-red-400/20 bg-red-400/[0.06] px-4 py-3">
+                      {Object.values(errors).map((e, i) => (
+                        <p key={i} className="font-body text-xs text-red-400">• {e}</p>
+                      ))}
+                    </div>
+                  )}
+
+                  {step === 1 && <Step1 form={form} update={update} />}
+                  {step === 2 && <Step2 form={form} update={update} />}
+                  {step === 3 && <Step3 form={form} onSign={handleSign} signing={signing} />}
+
+                  {step < 3 && (
+                    <div className="flex gap-3 mt-8">
+                      {step > 1 && (
+                        <button
+                          onClick={goBack}
+                          className="flex-1 rounded-2xl border border-white/10 bg-white/[0.03] py-3.5 font-body text-sm text-white/50 transition hover:bg-white/[0.06] hover:text-white/80"
+                        >
+                          ← Back
+                        </button>
+                      )}
+                      <button
+                        onClick={goNext}
+                        className="flex-1 rounded-2xl bg-cyan-400 py-3.5 font-body text-sm font-bold text-black transition hover:bg-cyan-300"
+                        style={{ boxShadow: "0 0 20px rgba(34,211,238,0.3)" }}
+                      >
+                        Continue →
+                      </button>
+                    </div>
+                  )}
+
+                  {step === 3 && (
+                    <button
+                      onClick={goBack}
+                      className="w-full mt-3 rounded-2xl border border-white/10 bg-white/[0.03] py-3 font-body text-sm text-white/40 transition hover:bg-white/[0.06] hover:text-white/70"
+                    >
+                      ← Edit Details
+                    </button>
+                  )}
+                </SlidePanel>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
