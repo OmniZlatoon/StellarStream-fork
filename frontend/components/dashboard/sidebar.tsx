@@ -17,6 +17,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import { TransactionQueueManager } from "@/components/dashboard/TransactionQueueManager";
 
 type NavItem = {
   label: string;
@@ -361,6 +362,9 @@ export function Sidebar({ onOpenAuditLog }: SidebarProps) {
             </div>
           </div>
         </div>
+
+        {/* Transaction Queue */}
+        <TransactionQueueManager collapsed={collapsed} />
       </aside>
 
       {/* ── Mobile bottom bar ── */}
@@ -413,6 +417,7 @@ export function Sidebar({ onOpenAuditLog }: SidebarProps) {
             }
           })}
         </nav>
+        <TransactionQueueManager collapsed />
       </div>
     </>
   );

@@ -4,6 +4,7 @@ use soroban_sdk::xdr::ToXdr;
 use soroban_sdk::{contract, contractimpl, symbol_short, Address, Env, IntoVal, String, Symbol, Vec};
 
 mod contracterror;
+mod math;
 mod storage;
 mod types;
 mod v1_interface;
@@ -217,6 +218,7 @@ impl Contract {
             v1_stream_id,
             step_duration: 0,
             multiplier_bps: 0,
+            penalty_bps: 0,
             vault_address: None,
             yield_enabled: false,
             is_pending: false,
@@ -396,8 +398,18 @@ impl Contract {
 
         let now = env.ledger().timestamp();
         let unlocked = Self::calculate_unlocked_internal(&stream, now);
-        let to_receiver = unlocked.saturating_sub(stream.withdrawn_amount);
-        let to_sender = stream.total_amount.saturating_sub(unlocked);
+        let earned = unlocked.saturating_sub(stream.withdrawn_amount);
+        let sender_remaining = stream.total_amount.saturating_sub(unlocked);
+
+        // Apply breakup penalty if the sender is cancelling and penalty_bps > 0.
+        let penalty = if caller == stream.sender && stream.penalty_bps > 0 {
+            (sender_remaining * stream.penalty_bps as i128) / 10_000
+        } else {
+            0
+        };
+
+        let to_receiver = earned + penalty;
+        let to_sender = sender_remaining.saturating_sub(penalty);
         let total_remaining = to_receiver + to_sender;
 
         // If Yield-Bearing, withdraw total remaining from Vault
@@ -797,6 +809,10 @@ impl Contract {
             return Err(Error::InvalidTimeRange);
         }
 
+        if args.penalty_bps > 10_000 {
+            return Err(Error::InvalidPenalty);
+        }
+
         if args.total_amount < storage::get_min_value(&env, &args.token) {
             return Err(Error::BelowDustThreshold);
         }
@@ -836,6 +852,7 @@ impl Contract {
             v1_stream_id: 0,
             step_duration: args.step_duration,
             multiplier_bps: args.multiplier_bps,
+            penalty_bps: args.penalty_bps,
             vault_address: vault_used,
             yield_enabled: args.yield_enabled,
             is_pending: false,
@@ -952,6 +969,7 @@ impl Contract {
             v1_stream_id: 0,
             step_duration: args.step_duration,
             multiplier_bps: args.multiplier_bps,
+            penalty_bps: 0, // permit streams default to no penalty
             vault_address: None, // No vault support by permit yet
             yield_enabled: false,
             is_pending: false,
@@ -1061,6 +1079,7 @@ impl Contract {
                 v1_stream_id: 0,
                 step_duration: args.step_duration,
                 multiplier_bps: args.multiplier_bps,
+                penalty_bps: args.penalty_bps,
                 vault_address: None, // Batch creation defaults to no vault
                 yield_enabled: false,
                 is_pending: false,

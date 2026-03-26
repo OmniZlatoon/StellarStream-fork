@@ -35,4 +35,6 @@ pub enum Error {
     NoTreasury = 28,
     /// Token is not approved for V2 stream creation
     AssetNotWhitelisted = 29,
+    /// penalty_bps exceeds 10000 (100%)
+    InvalidPenalty = 30,
 }

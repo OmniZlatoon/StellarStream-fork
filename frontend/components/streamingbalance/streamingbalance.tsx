@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, useSpring, useTransform } from "framer-motion";
 import type { Stream } from "@/lib/contracts/stellarstream";
 import { useFlowRate } from "@/lib/use-flow-rate";
+import { useAssetDecimals } from "@/lib/use-asset-decimals";
 
 const DIGIT_HEIGHT = 56;
 const DIGITS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -131,22 +132,35 @@ export interface StreamingBalanceCardProps {
   initialValue?: number;
   rate?: number;
   prefix?: string;
+  /** Override decimal places. When `stream` is provided and assetIssuer is set,
+   *  decimals are fetched dynamically from Stellar Horizon. */
   decimals?: number;
   color?: string;
   /** Pass a live contract Stream to derive balance and rate automatically */
   stream?: Stream | null;
+  /** Asset code for dynamic decimal lookup (e.g. "USDC") */
+  assetCode?: string;
+  /** Asset issuer for dynamic decimal lookup. Omit for native XLM. */
+  assetIssuer?: string;
 }
 
 export default function StreamingBalanceCard({
   initialValue = 48291.3847291,
   rate = 0.0000247,
   prefix = "$",
-  decimals = 7,
+  decimals: decimalsProp,
   color = "#00f5ff",
   stream,
+  assetCode,
+  assetIssuer,
 }: StreamingBalanceCardProps) {
+  // Fetch decimals from Stellar Horizon when asset info is provided
+  const { decimals: fetchedDecimals } = useAssetDecimals(assetCode, assetIssuer);
+  // Explicit prop wins; otherwise use dynamically fetched value
+  const decimals = decimalsProp ?? fetchedDecimals;
+
   // If a contract stream is provided, derive rate and initial balance from it
-  const flowRate = useFlowRate(stream);
+  const flowRate = useFlowRate(stream, decimals);
   const resolvedInitial = stream ? flowRate.balance : initialValue;
   const resolvedRate = stream ? flowRate.ratePerMs : rate;
 

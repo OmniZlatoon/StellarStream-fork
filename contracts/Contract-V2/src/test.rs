@@ -6,7 +6,6 @@ use soroban_sdk::{
     testutils::{Address as _, Ledger},
     token::TokenClient,
     vec, Address, Env, String,
-    Address, Env,
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -860,6 +859,7 @@ fn test_cliff_period_locks_funds() {
         end_time,
         step_duration: 0,
         multiplier_bps: 0,
+        penalty_bps: 0,
         vault_address: None,
         yield_enabled: false,
         is_recurrent: false,
@@ -913,6 +913,7 @@ fn test_v2_cancel_splits_funds() {
         end_time: 100,
         step_duration: 0,
         multiplier_bps: 0,
+        penalty_bps: 0,
         vault_address: None,
         yield_enabled: false,
         is_recurrent: false,
@@ -982,6 +983,7 @@ fn test_geometric_rate_unlock_math() {
         end_time: 100,
         step_duration: 50,
         multiplier_bps: 10000,
+        penalty_bps: 0,
         vault_address: None,
         yield_enabled: false,
         is_recurrent: false,
@@ -1042,12 +1044,9 @@ fn test_create_batch_streams_success() {
             end_time: 100,
             step_duration: 0,
             multiplier_bps: 0,
+            penalty_bps: 0,
             vault_address: None,
             yield_enabled: false,
-        is_recurrent: false,
-        cycle_duration: 0,
-        cancellation_type: 0,
-        affiliate: None,
             is_recurrent: false,
             cycle_duration: 0,
             cancellation_type: 0,
@@ -1063,12 +1062,9 @@ fn test_create_batch_streams_success() {
             end_time: 200,
             step_duration: 0,
             multiplier_bps: 0,
+            penalty_bps: 0,
             vault_address: None,
             yield_enabled: false,
-        is_recurrent: false,
-        cycle_duration: 0,
-        cancellation_type: 0,
-        affiliate: None,
             is_recurrent: false,
             cycle_duration: 0,
             cancellation_type: 0,
@@ -1126,12 +1122,9 @@ fn test_create_batch_streams_max_limit() {
             end_time: 100,
             step_duration: 0,
             multiplier_bps: 0,
+            penalty_bps: 0,
             vault_address: None,
             yield_enabled: false,
-        is_recurrent: false,
-        cycle_duration: 0,
-        cancellation_type: 0,
-        affiliate: None,
             is_recurrent: false,
             cycle_duration: 0,
             cancellation_type: 0,
@@ -1173,12 +1166,9 @@ fn test_create_batch_streams_atomic_failure() {
             end_time: 100,
             step_duration: 0,
             multiplier_bps: 0,
+            penalty_bps: 0,
             vault_address: None,
             yield_enabled: false,
-        is_recurrent: false,
-        cycle_duration: 0,
-        cancellation_type: 0,
-        affiliate: None,
             is_recurrent: false,
             cycle_duration: 0,
             cancellation_type: 0,
@@ -1194,12 +1184,9 @@ fn test_create_batch_streams_atomic_failure() {
             end_time: 100,
             step_duration: 0,
             multiplier_bps: 0,
+            penalty_bps: 0,
             vault_address: None,
             yield_enabled: false,
-        is_recurrent: false,
-        cycle_duration: 0,
-        cancellation_type: 0,
-        affiliate: None,
             is_recurrent: false,
             cycle_duration: 0,
             cancellation_type: 0,
@@ -1842,4 +1829,122 @@ fn test_yield_bearing_stream() {
     v2_client.withdraw(&0, &receiver);
 
     assert_eq!(token_client.balance(&receiver), 500_000_000);
+}
+
+// ── penalty_bps tests ─────────────────────────────────────────────────────
+
+fn make_penalised_stream<'a>(env: &'a Env, penalty_bps: u32) -> (ContractClient<'a>, Address, Address, Address, u64) {
+    env.mock_all_auths();
+    let admin = Address::generate(env);
+    let sender = Address::generate(env);
+    let receiver = Address::generate(env);
+
+    let contract_id = env.register(Contract, ());
+    let client = ContractClient::new(env, &contract_id);
+    client.init(&admin);
+
+    let (token_addr, _, asset_admin) = create_token(env, &admin);
+    asset_admin.mint(&sender, &200_000_000);
+
+    env.ledger().with_mut(|li| li.timestamp = 0);
+
+    let stream_id = client.create_stream(&StreamArgs {
+        sender: sender.clone(),
+        receiver: receiver.clone(),
+        token: token_addr,
+        total_amount: 100_000_000,
+        start_time: 0,
+        cliff_time: 0,
+        end_time: 100,
+        step_duration: 0,
+        multiplier_bps: 0,
+        penalty_bps,
+    });
+
+    (client, sender, receiver, admin, stream_id)
+}
+
+#[test]
+fn test_sender_cancel_applies_penalty() {
+    let env = Env::default();
+    // 1000 bps = 10% penalty
+    let (client, sender, receiver, _, stream_id) = make_penalised_stream(&env, 1000);
+
+    let (_, _, token_client) = create_token(&env, &Address::generate(&env));
+    let stream = client.get_stream(&stream_id).unwrap();
+    let token_client = soroban_sdk::token::TokenClient::new(&env, &stream.token);
+
+    // Cancel at t=50: unlocked = 50_000_000, remaining = 50_000_000
+    // penalty = 50_000_000 * 1000 / 10000 = 5_000_000
+    // to_receiver = 50_000_000 (earned) + 5_000_000 (penalty) = 55_000_000
+    // to_sender   = 50_000_000 - 5_000_000 = 45_000_000
+    env.ledger().with_mut(|li| li.timestamp = 50);
+    client.cancel(&stream_id, &sender);
+
+    assert_eq!(token_client.balance(&receiver), 55_000_000);
+    assert_eq!(token_client.balance(&sender), 145_000_000); // 200M minted - 100M deposited + 45M returned
+}
+
+#[test]
+fn test_receiver_cancel_no_penalty() {
+    let env = Env::default();
+    let (client, sender, receiver, _, stream_id) = make_penalised_stream(&env, 1000);
+
+    let stream = client.get_stream(&stream_id).unwrap();
+    let token_client = soroban_sdk::token::TokenClient::new(&env, &stream.token);
+
+    // Receiver cancels at t=50 — no penalty applies
+    // to_receiver = 50_000_000, to_sender = 50_000_000
+    env.ledger().with_mut(|li| li.timestamp = 50);
+    client.cancel(&stream_id, &receiver);
+
+    assert_eq!(token_client.balance(&receiver), 50_000_000);
+    assert_eq!(token_client.balance(&sender), 150_000_000);
+}
+
+#[test]
+fn test_zero_penalty_bps_no_penalty() {
+    let env = Env::default();
+    let (client, sender, receiver, _, stream_id) = make_penalised_stream(&env, 0);
+
+    let stream = client.get_stream(&stream_id).unwrap();
+    let token_client = soroban_sdk::token::TokenClient::new(&env, &stream.token);
+
+    env.ledger().with_mut(|li| li.timestamp = 50);
+    client.cancel(&stream_id, &sender);
+
+    // No penalty: standard split
+    assert_eq!(token_client.balance(&receiver), 50_000_000);
+    assert_eq!(token_client.balance(&sender), 150_000_000);
+}
+
+#[test]
+fn test_invalid_penalty_bps_rejected() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let admin = Address::generate(&env);
+    let sender = Address::generate(&env);
+    let receiver = Address::generate(&env);
+
+    let contract_id = env.register(Contract, ());
+    let client = ContractClient::new(&env, &contract_id);
+    client.init(&admin);
+
+    let (token_addr, _, asset_admin) = create_token(&env, &admin);
+    asset_admin.mint(&sender, &200_000_000);
+
+    let result = client.try_create_stream(&StreamArgs {
+        sender: sender.clone(),
+        receiver: receiver.clone(),
+        token: token_addr,
+        total_amount: 100_000_000,
+        start_time: 0,
+        cliff_time: 0,
+        end_time: 100,
+        step_duration: 0,
+        multiplier_bps: 0,
+        penalty_bps: 10_001, // > 100%
+    });
+
+    assert_eq!(result, Err(Ok(ContractError::InvalidPenalty)));
 }
