@@ -7,7 +7,8 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, ShieldCheck } from "lucide-react";
+import { VerifiedNebulaBadge } from "@/components/VerifiedNebulaBadge";
 
 // ─── Types (duplicated here to avoid importing from the server page) ──────────
 
@@ -62,22 +63,27 @@ export function ViewStreamClient({ stream }: { stream: StreamData }) {
       transition={{ duration: 0.5 }}
       className="glass-card max-w-lg w-full mx-auto p-8 space-y-6"
     >
-      {/* Header */}
+      {/* Verified Badge Header */}
+      <div className="flex justify-center -mt-12 mb-8">
+        <VerifiedNebulaBadge />
+      </div>
+
+      {/* Internal Header */}
       <div className="flex items-center justify-between">
-        <span className="font-ticker text-[11px] uppercase tracking-widest text-white/30">
-          {stream.id}
+        <span className="font-ticker text-[10px] uppercase tracking-widest text-[#00f5ff]/40">
+          TX_REF: {stream.id.slice(0, 16)}...
         </span>
         <span
-          className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-wider ${
+          className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-black uppercase tracking-wider ${
             isActive
-              ? "border-[#00f5ff]/30 bg-[#00f5ff]/10 text-[#00f5ff]"
+              ? "border-cyan-400/50 bg-cyan-400/10 text-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.2)]"
               : stream.status === "paused"
               ? "border-orange-400/30 bg-orange-400/10 text-orange-400"
               : "border-white/15 bg-white/5 text-white/40"
           }`}
         >
           {isActive && (
-            <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
+            <span className="h-1.5 w-2 bg-current animate-pulse rounded-sm" />
           )}
           {stream.status}
         </span>
