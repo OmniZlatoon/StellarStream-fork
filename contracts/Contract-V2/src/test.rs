@@ -1131,6 +1131,79 @@ fn test_create_batch_streams_atomic_failure() {
     assert_eq!(token_client.balance(&sender), 200_000_000);
 }
 
+#[test]
+fn test_create_stream_deducts_protocol_fee_to_treasury() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let sender = Address::generate(&env);
+    let receiver = Address::generate(&env);
+    let treasury = Address::generate(&env);
+    let token_admin = Address::generate(&env);
+    let (token_id, token_client, asset_client) = create_token(&env, &token_admin);
+
+    asset_client.mint(&sender, &1_000_000_000);
+
+    let (contract_id, v2_client) = setup_v2(&env, &admin);
+    v2_client.set_treasury(&treasury);
+    v2_client.set_fee_bps(&10u32);
+
+    let sid = v2_client.create_stream(&stream_args(&sender, &receiver, &token_id, 100_000_000));
+
+    let stream = v2_client.get_stream(&sid).unwrap();
+    assert_eq!(stream.total_amount, 99_900_000);
+    assert_eq!(v2_client.get_pending_fees(&treasury, &token_id), 100_000);
+    assert_eq!(token_client.balance(&sender), 900_000_000);
+    assert_eq!(token_client.balance(&contract_id), 100_000_000);
+}
+
+#[test]
+fn test_create_stream_with_fee_requires_treasury() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let sender = Address::generate(&env);
+    let receiver = Address::generate(&env);
+    let token_admin = Address::generate(&env);
+    let (token_id, _, asset_client) = create_token(&env, &token_admin);
+
+    asset_client.mint(&sender, &1_000_000_000);
+
+    let (_, v2_client) = setup_v2(&env, &admin);
+    v2_client.set_fee_bps(&10u32);
+
+    let result =
+        v2_client.try_create_stream(&stream_args(&sender, &receiver, &token_id, 100_000_000));
+    assert_eq!(result, Err(Ok(Error::NoTreasury)));
+}
+
+#[test]
+fn test_withdraw_treasury_transfers_pending_fees() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let sender = Address::generate(&env);
+    let receiver = Address::generate(&env);
+    let treasury = Address::generate(&env);
+    let token_admin = Address::generate(&env);
+    let (token_id, token_client, asset_client) = create_token(&env, &token_admin);
+
+    asset_client.mint(&sender, &1_000_000_000);
+
+    let (_, v2_client) = setup_v2(&env, &admin);
+    v2_client.set_treasury(&treasury);
+    v2_client.set_fee_bps(&10u32);
+    v2_client.create_stream(&stream_args(&sender, &receiver, &token_id, 200_000_000));
+
+    let withdrawn = v2_client.withdraw_treasury(&token_id);
+    assert_eq!(withdrawn, 200_000);
+    assert_eq!(v2_client.get_pending_fees(&treasury, &token_id), 0);
+    assert_eq!(token_client.balance(&treasury), 200_000);
+}
+
 // ── Governance: Stream-Weighted Voting Power tests ───────────────────────────
 
 #[test]
