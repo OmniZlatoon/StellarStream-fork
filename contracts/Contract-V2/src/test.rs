@@ -1361,6 +1361,33 @@ fn test_split_multi_asset_requires_gas_buffer() {
 }
 
 #[test]
+fn test_split_multi_asset_fails_on_non_token_asset() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let sender = Address::generate(&env);
+    let receiver = Address::generate(&env);
+    let token_admin = Address::generate(&env);
+    let (token_id, _, asset_client) = create_token(&env, &token_admin);
+
+    asset_client.mint(&sender, &1_000_000_000);
+
+    let (_, v2_client) = setup_v2(&env, &admin);
+    v2_client.set_fee_token(&token_id);
+
+    let bad_asset = Address::generate(&env); // not an asset contract
+
+    let recipients = soroban_sdk::vec![
+        &env,
+        crate::types::MultiAssetRecipient { address: receiver.clone(), asset: bad_asset, amount: 100_000_000 },
+    ];
+
+    let result = v2_client.try_split_multi_asset(&sender, &recipients);
+    assert_eq!(result, Err(Ok(Error::AssetInterfaceNotSupported)));
+}
+
+#[test]
 fn test_withdraw_treasury_transfers_pending_fees() {
     let env = Env::default();
     env.mock_all_auths();

@@ -3820,6 +3820,26 @@ impl Contract {
     // Issue #604 — Gas-Efficient Loop Iteration
     // ----------------------------------------------------------------
 
+    fn ensure_asset_interface(env: &Env, asset: &Address, from: &Address) -> Result<(), Error> {
+        let token_client = soroban_sdk::token::TokenClient::new(env, asset);
+
+        // Ensure the target asset can respond to balance query without trapping.
+        if token_client.try_balance(from).is_err() {
+            return Err(Error::AssetInterfaceNotSupported);
+        }
+
+        // Ensure transfer endpoint exists and can be invoked (no-op with 0 amount).
+        let check_transfer_target = env.current_contract_address();
+        if token_client
+            .try_transfer(from, &check_transfer_target, &0)
+            .is_err()
+        {
+            return Err(Error::AssetInterfaceNotSupported);
+        }
+
+        Ok(())
+    }
+
     /// Disburse multiple assets to multiple recipients in a single atomic call.
     ///
     /// The caller must have pre-approved this contract (via `token.approve`) for
@@ -3886,14 +3906,20 @@ impl Contract {
                 storage::release_lock(&env);
                 return Err(Error::BelowDustThreshold);
             }
+            // Issue #637 — Asset interface compatibility guard
+            Self::ensure_asset_interface(&env, &entry.asset, &from)?;
         }
 
         // Issue #602 — collect protocol fee
         if fee_per_recipient > 0 {
+            // Validate fee token interface before collecting.
+            let fee_token = fee_token_addr.as_ref().unwrap();
+            Self::ensure_asset_interface(&env, fee_token, &from)?;
+
             let total_fee = fee_per_recipient
                 .checked_mul(n as i128)
                 .ok_or(Error::Overflow)?;
-            soroban_sdk::token::TokenClient::new(&env, fee_token_addr.as_ref().unwrap()).transfer(
+            soroban_sdk::token::TokenClient::new(&env, fee_token).transfer(
                 &from,
                 fee_collector.as_ref().unwrap(),
                 &total_fee,
