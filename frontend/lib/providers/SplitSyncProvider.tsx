@@ -36,6 +36,8 @@ interface SplitSyncContextValue {
     /** proposalId → address of whoever is currently editing */
     activeEditors: Record<string, string>;
     connected: boolean;
+    /** Clear all local draft proposals */
+    clearLocalDrafts: () => void;
 }
 
 const SplitSyncContext = createContext<SplitSyncContextValue | null>(null);
@@ -49,6 +51,7 @@ export function useSplitSync(): SplitSyncContextValue {
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "http://localhost:3001";
+const STORAGE_KEY = "stellar_stream_split_drafts";
 
 interface SplitSyncProviderProps {
     children: ReactNode;
@@ -61,6 +64,37 @@ export function SplitSyncProvider({ children, userAddress }: SplitSyncProviderPr
     const [activeEditors, setActiveEditors] = useState<Record<string, string>>({});
     const [connected, setConnected] = useState(false);
     const socketRef = useRef<Socket | null>(null);
+
+    // ── Persistence ───────────────────────────────────────────────────────────
+
+    // Load from localStorage on mount
+    useEffect(() => {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed)) {
+                    setProposals(parsed);
+                }
+            } catch (err) {
+                console.error("[SplitSyncProvider] Failed to load drafts from localStorage", err);
+            }
+        }
+    }, []);
+
+    // Save to localStorage on change
+    useEffect(() => {
+        if (proposals.length > 0) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(proposals));
+        } else {
+            localStorage.removeItem(STORAGE_KEY);
+        }
+    }, [proposals]);
+
+    const clearLocalDrafts = useCallback(() => {
+        setProposals([]);
+        localStorage.removeItem(STORAGE_KEY);
+    }, []);
 
     const applyDraftUpdated = useCallback((payload: DraftUpdatedPayload) => {
         setProposals((prev) => {
@@ -113,7 +147,9 @@ export function SplitSyncProvider({ children, userAddress }: SplitSyncProviderPr
     }, [userAddress, applyDraftUpdated, applyEditorPresence]);
 
     return (
-        <SplitSyncContext.Provider value={{ proposals, setProposals, activeEditors, connected }}>
+        <SplitSyncContext.Provider
+            value={{ proposals, setProposals, activeEditors, connected, clearLocalDrafts }}
+        >
             {children}
         </SplitSyncContext.Provider>
     );

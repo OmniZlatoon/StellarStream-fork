@@ -18,6 +18,7 @@ import {
   ShieldAlert,
   Menu,
   X,
+  Share2,
 } from "lucide-react";
 import { TransactionQueueManager } from "@/components/dashboard/TransactionQueueManager";
 
@@ -81,6 +82,11 @@ export function Sidebar({ onOpenAuditLog }: SidebarProps) {
       label: "Invoice Links",
       href: "/dashboard/invoice-links",
       icon: ClipboardCheck,
+    },
+    {
+      label: "Splitter",
+      href: "/dashboard/splitter",
+      icon: Share2,
     },
     {
       label: "History",
