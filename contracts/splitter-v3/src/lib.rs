@@ -643,6 +643,46 @@ impl SplitterV3 {
             .unwrap_or(0)
     }
 
+    // ── split_funds: security-guarded batch transfer ──────────────────────────
+
+    /// Authenticated batch transfer: sender authorizes the entire batch,
+    /// asset is validated as a live token contract, and recipients must be non-empty.
+    pub fn split_funds(
+        env: Env,
+        sender: Address,
+        asset: Address,
+        recipients: Vec<Recipient>,
+        total_amount: i128,
+    ) -> Result<(), Error> {
+        // Security: sender must authorize the full batch.
+        sender.require_auth();
+
+        // Security: recipients list must not be empty.
+        if recipients.is_empty() {
+            return Err(Error::EmptyRecipients);
+        }
+
+        // Security: validate asset is a live token contract by calling decimals().
+        // This traps early if the address is not a valid deployed contract.
+        let token_client = token::Client::new(&env, &asset);
+        let _ = token_client.decimals();
+
+        let contract_addr = env.current_contract_address();
+        token_client.transfer(&sender, &contract_addr, &total_amount);
+
+        for r in recipients.iter() {
+            let amount = total_amount
+                .checked_mul(r.share_bps as i128)
+                .ok_or(Error::Overflow)?
+                / 10_000;
+            if amount > 0 {
+                token_client.transfer(&contract_addr, &r.address, &amount);
+            }
+        }
+
+        Ok(())
+    }
+
     // ── Views ─────────────────────────────────────────────────────────────────
 
     pub fn is_verified(env: &Env, address: Address) -> bool {

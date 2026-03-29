@@ -24,4 +24,5 @@ pub enum Error {
     InsufficientCouncilSignatures = 19, // fewer than 5 unique valid signatures
     DuplicateCouncilSigner = 20,        // same council key signed twice
     InvalidCouncilSigner = 21,          // signer not in the stored council list
+    EmptyRecipients = 22,               // recipients vector is empty
 }
