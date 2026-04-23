@@ -28,4 +28,6 @@ pub enum Error {
     EmptyRecipients = 23,
     NotYetReleased = 22,
     InvalidBpsSum = 24,
+    // #922: circuit breaker
+    ContractPaused = 25,
 }
