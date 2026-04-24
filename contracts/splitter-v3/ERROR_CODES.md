@@ -29,3 +29,13 @@
 | 22   | `NotYetReleased`               | `execute_split`: `release_time` has not been reached yet.    |
 | 23   | `EmptyRecipients`              | The recipients vector passed to `split_funds` is empty.      |
 | 24   | `InvalidBpsSum`                | `split_percentage`: `bps` values do not sum to 10 000.       |
+| 25   | `MigrationAlreadyApplied`      | The migration version has already been applied.              |
+| 26   | `TransferFailed`               | An atomic transfer failed; entire batch rolled back.         |
+| 27   | `RecipientNotWhitelisted`      | Recipient is not on the whitelist in whitelist-only mode.    |
+| 28   | `ShareBelowMinimum`            | A recipient's computed share is below the 1 XLM minimum.    |
+| 29   | `AlreadyProcessed`             | Idempotency hash already seen; duplicate disbursement.       |
+| 30   | `ContractPaused`               | Contract is paused; no state-changing calls allowed.         |
+| 31   | `InsufficientBalance`          | Sender balance is below `total_amount`.                      |
+| 32   | `InvalidAsset`                 | Asset address does not implement the Stellar token interface. |
+| 33   | `NotAuthorized`                | Caller is not authorized to perform this action.             |
+| 34   | `InsufficientFunds`            | Provided amount is insufficient to cover the disbursement.   |

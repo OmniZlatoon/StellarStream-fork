@@ -27,4 +27,8 @@ pub enum DataKey {
     // #927: whitelist map and flag
     Whitelisted(Address),
     WhitelistOnly,
+    // #911: protocol-level version constant
+    ProtocolVersion,
+    // #911: protocol fee wallet (alias for Treasury used in init)
+    FeeWallet,
 }

@@ -77,11 +77,34 @@ pub enum ContractState {
 /// Controls whether `split_funds` pushes tokens directly to recipients (PUSH)
 /// or credits claimable balances they must claim themselves (PULL).
 /// PULL mode bypasses trustline issues for recipients.
+// ── #911: V3 base contract types ──────────────────────────────────────────────
+
+/// Disbursement status for a V3 split config entry.
+#[contracttype]
+#[derive(Clone, PartialEq)]
+pub enum DisbursementStatus {
+    Pending,
+    Completed,
+    Cancelled,
+}
+
+/// #917: Transfer mode — PUSH sends directly; PULL credits claimable balances.
 #[contracttype]
 #[derive(Clone, PartialEq)]
 pub enum SplitMode {
     Push,
     Pull,
+}
+
+/// #911: Stores the full configuration for a single disbursement.
+#[contracttype]
+#[derive(Clone)]
+pub struct SplitConfigV3 {
+    pub owner: Address,
+    pub asset_address: Address,
+    pub total_amount: i128,
+    pub recipients_list: Vec<Recipient>,
+    pub status: DisbursementStatus,
 }
 
 // ── Contract ──────────────────────────────────────────────────────────────────
@@ -130,6 +153,39 @@ impl SplitterV3 {
             Self::_set_verified(&env, &addr, true);
         }
         Ok(())
+    }
+
+    // ── #911: Protocol-level init (fee wallet + version constants) ────────────
+
+    /// Stores protocol-level constants: fee wallet address and contract version.
+    /// Can only be called once (guarded by Admin key existence).
+    /// Separate from `initialize` so protocol constants can be set independently.
+    pub fn init(env: Env, fee_wallet: Address, version: u32) -> Result<(), Error> {
+        if !env.storage().instance().has(&DataKey::Admin) {
+            return Err(Error::NotAdmin);
+        }
+        Self::_require_admin(&env)?;
+        env.storage()
+            .instance()
+            .set(&DataKey::FeeWallet, &fee_wallet);
+        env.storage()
+            .instance()
+            .set(&DataKey::ProtocolVersion, &version);
+        Self::_bump_instance_ttl(&env);
+        Ok(())
+    }
+
+    /// View the stored protocol version.
+    pub fn protocol_version(env: Env) -> u32 {
+        env.storage()
+            .instance()
+            .get(&DataKey::ProtocolVersion)
+            .unwrap_or(0)
+    }
+
+    /// View the stored fee wallet address.
+    pub fn fee_wallet(env: Env) -> Option<Address> {
+        env.storage().instance().get(&DataKey::FeeWallet)
     }
 
     // ── #922: Circuit-breaker ─────────────────────────────────────────────────
