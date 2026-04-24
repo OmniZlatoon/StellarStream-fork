@@ -72,6 +72,11 @@ pub enum ContractState {
     Paused,
 }
 
+// ── #917: Push/Pull transfer mode ─────────────────────────────────────────────
+
+/// Controls whether `split_funds` pushes tokens directly to recipients (PUSH)
+/// or credits claimable balances they must claim themselves (PULL).
+/// PULL mode bypasses trustline issues for recipients.
 // ── #911: V3 base contract types ──────────────────────────────────────────────
 
 /// Disbursement status for a V3 split config entry.
@@ -780,12 +785,14 @@ impl SplitterV3 {
     /// asset is validated as a live token contract, and recipients must be non-empty.
     /// #926: uses try_transfer — if any transfer fails the whole tx panics (atomic rollback).
     /// #927: if whitelist-only mode is on, every recipient must be whitelisted.
+    /// #917: mode=Push sends directly; mode=Pull credits claimable balances.
     pub fn split_funds(
         env: Env,
         sender: Address,
         asset: Address,
         recipients: Vec<Recipient>,
         total_amount: i128,
+        mode: SplitMode,
     ) -> Result<(), Error> {
         Self::_require_not_paused(&env)?;
         sender.require_auth();
@@ -832,19 +839,56 @@ impl SplitterV3 {
             }
         }
 
-        // #926: use try_transfer — panic on any failure to trigger atomic rollback.
-        for r in recipients.iter() {
-            let amount = total_amount
-                .checked_mul(r.share_bps as i128)
-                .ok_or(Error::Overflow)?
-                / 10_000;
-            if amount > 0 {
-                let _ = token_client
-                    .try_transfer(&contract_addr, &r.address, &amount)
-                    .map_err(|_| Error::TransferFailed)?;
+        // Pull funds from sender into contract first.
+        let _ = token_client
+            .try_transfer(&sender, &contract_addr, &total_amount)
+            .map_err(|_| Error::TransferFailed)?;
+
+        match mode {
+            SplitMode::Push => {
+                // #926: use try_transfer — panic on any failure to trigger atomic rollback.
+                for r in recipients.iter() {
+                    let amount = total_amount
+                        .checked_mul(r.share_bps as i128)
+                        .ok_or(Error::Overflow)?
+                        / 10_000;
+                    if amount > 0 {
+                        let _ = token_client
+                            .try_transfer(&contract_addr, &r.address, &amount)
+                            .map_err(|_| Error::TransferFailed)?;
+                    }
+                }
+            }
+            SplitMode::Pull => {
+                // #917: credit claimable balances — recipients must call claim().
+                for r in recipients.iter() {
+                    let amount = total_amount
+                        .checked_mul(r.share_bps as i128)
+                        .ok_or(Error::Overflow)?
+                        / 10_000;
+                    if amount > 0 {
+                        Self::_credit_claimable(&env, &r.address, &asset, amount)?;
+                    }
+                }
             }
         }
 
+        Ok(())
+    }
+
+    /// #917: Recipient claims their claimable balance for a given asset.
+    pub fn claim(env: Env, recipient: Address, asset: Address) -> Result<(), Error> {
+        recipient.require_auth();
+        let key = DataKey::ClaimableBalance(recipient.clone(), asset.clone());
+        let amount: i128 = env.storage().persistent().get(&key).unwrap_or(0);
+        if amount <= 0 {
+            return Err(Error::NothingToClaim);
+        }
+        env.storage().persistent().set(&key, &0i128);
+        let token_client = token::Client::new(&env, &asset);
+        token_client.transfer(&env.current_contract_address(), &recipient, &amount);
+        env.events()
+            .publish((symbol_short!("claimed"), recipient), amount);
         Ok(())
     }
 
