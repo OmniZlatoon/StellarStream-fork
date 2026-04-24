@@ -29,4 +29,8 @@ pub enum DataKey {
     WhitelistOnly,
     // #918: external identity validator contract address
     IdentityValidator,
+    // #911: protocol-level version constant
+    ProtocolVersion,
+    // #911: protocol fee wallet (alias for Treasury used in init)
+    FeeWallet,
 }

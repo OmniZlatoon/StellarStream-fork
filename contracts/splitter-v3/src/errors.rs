@@ -42,4 +42,7 @@ pub enum Error {
     InsufficientBalance = 31,
     // #930: invalid SAC asset
     InvalidAsset = 32,
+    // #911: authorization errors
+    NotAuthorized = 33,
+    InsufficientFunds = 34,
 }
