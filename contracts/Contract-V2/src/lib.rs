@@ -3862,6 +3862,30 @@ impl Contract {
         Ok(())
     }
 
+    /// Set tiered fee configuration for "Whale" discounts. Admin-only.
+    /// Tiers must be provided in ascending order of threshold for proper calculation.
+    pub fn set_fee_tiers(env: Env, tiers: Vec<FeeTier>) -> Result<(), Error> {
+        storage::try_get_admin(&env)?.require_auth();
+
+        // Validate that no tier exceeds the hard protocol cap.
+        for tier in tiers.iter() {
+            if tier.fee_bps > MAX_FEE_BPS {
+                return Err(Error::FeeTooHigh);
+            }
+        }
+
+        storage::set_fee_tiers(&env, tiers);
+        Ok(())
+    }
+
+    /// Get the current tiered fee configuration.
+    pub fn get_fee_tiers(env: Env) -> Vec<FeeTier> {
+        match storage::get_fee_tiers(&env) {
+            Some(tiers) => tiers,
+            None => Vec::new(&env),
+        }
+    }
+
     pub fn add_to_whitelist(env: Env, asset: Address) -> Result<(), Error> {
         storage::try_get_admin(&env)?.require_auth();
         storage::add_to_whitelist(&env, &asset);
