@@ -2,11 +2,15 @@ import cron from "node-cron";
 import { PriceService } from "./services/price.service.js";
 import { TvlAggregatorService } from "./services/tvl-aggregator.service.js";
 import { AssetMetadataService } from "./services/asset-metadata.service.js";
+import { StellarExpertEnrichmentWorker } from "./services/stellar-expert-enrichment.service.js";
+import { DisbursementArchivalWorker } from "./workers/disbursement-archival.worker.js";
 import { logger } from "./logger.js";
 
 const priceService = new PriceService();
 const tvlService = new TvlAggregatorService();
 const assetService = new AssetMetadataService();
+const stellarExpertWorker = new StellarExpertEnrichmentWorker();
+const disbursementArchiver = new DisbursementArchivalWorker();
 
 /**
  * Update prices every 5 minutes (300 seconds)
@@ -77,6 +81,40 @@ export function scheduleAssetDiscovery() {
 }
 
 /**
+ * Enrich assets with Stellar-Expert data every 12 hours
+ */
+export function scheduleStellarExpertEnrichment() {
+  cron.schedule("0 */12 * * *", async () => {
+    try {
+      logger.info("Starting Stellar-Expert enrichment");
+      await stellarExpertWorker.enrichBatch();
+      logger.info("Stellar-Expert enrichment completed");
+    } catch (error) {
+      logger.error("Failed to enrich assets in scheduled task", error);
+    }
+  });
+
+  logger.info("Stellar-Expert enrichment scheduler started (every 12 hours)");
+}
+
+/**
+ * Archive old disbursements monthly (1st of month at 3 AM UTC)
+ */
+export function scheduleDisbursementArchival() {
+  cron.schedule("0 3 1 * *", async () => {
+    try {
+      logger.info("Starting disbursement archival");
+      const archived = await disbursementArchiver.archiveOldDisbursements();
+      logger.info("Disbursement archival completed", { archived });
+    } catch (error) {
+      logger.error("Failed to archive disbursements in scheduled task", error);
+    }
+  });
+
+  logger.info("Disbursement archival scheduler started (monthly on 1st at 3 AM UTC)");
+}
+
+/**
  * Initialize all scheduled tasks
  */
 export function initializeSchedulers() {
@@ -84,4 +122,6 @@ export function initializeSchedulers() {
   scheduleGlobalStatsUpdate();
   scheduleDailyTvlSnapshot();
   scheduleAssetDiscovery();
+  scheduleStellarExpertEnrichment();
+  scheduleDisbursementArchival();
 }

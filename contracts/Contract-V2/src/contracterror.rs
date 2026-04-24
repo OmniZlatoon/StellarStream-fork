@@ -41,4 +41,6 @@ pub enum Error {
     MigrationPaused = 31,
     /// Relayer fee exceeds the available withdrawal amount
     InvalidRelayerFee = 32,
+    /// Memo exceeds maximum allowed length (32 characters)
+    InvalidMemo = 33,
 }

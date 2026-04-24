@@ -1,5 +1,7 @@
 use soroban_sdk::{contracttype, Address, BytesN, Symbol, Val, Vec};
 
+pub const MAX_MEMO_LENGTH: u32 = 32;
+
 #[contracttype]
 #[derive(Clone, Debug, PartialEq)]
 pub struct StreamV2 {
@@ -55,6 +57,8 @@ pub struct StreamArgs {
     pub cancellation_type: u32,
     /// Reserved for future routing extensions; protocol fees currently go to treasury only.
     pub affiliate: Option<Address>,
+    /// Optional memo for external integrations (max 32 characters)
+    pub memo: Option<Symbol>,
 }
 
 #[contracttype]
@@ -329,5 +333,16 @@ pub struct FeesWithdrawnEvent {
     pub recipient: Address,
     pub token: Address,
     pub amount: i128,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct SplitExecutedEvent {
+    pub stream_id: u64,
+    pub sender: Address,
+    pub receiver: Address,
+    pub amount: i128,
+    pub memo: Option<Symbol>,
     pub timestamp: u64,
 }
