@@ -1,10 +1,10 @@
 import { Router, Request, Response } from "express";
 import { z } from "zod";
-import { ProofOfPaymentPDFService } from "../services/proof-of-payment-pdf.service.js";
-import { prisma } from "../lib/db.js";
-import validateRequest from "../middleware/validateRequest.js";
-import asyncHandler from "../utils/asyncHandler.js";
-import { logger } from "../logger.js";
+import { ProofOfPaymentPDFService } from "../../services/proof-of-payment-pdf.service.js";
+import { prisma } from "../../lib/db.js";
+import validateRequest from "../../middleware/validateRequest.js";
+import asyncHandler from "../../utils/asyncHandler.js";
+import { logger } from "../../logger.js";
 
 const router = Router();
 const pdfService = new ProofOfPaymentPDFService();
@@ -61,10 +61,10 @@ router.get(
       res.setHeader("Content-Disposition", `attachment; filename="proof-of-payment-${splitId}.pdf"`);
       res.setHeader("Content-Length", pdfBuffer.length);
 
-      res.send(pdfBuffer);
+      return res.send(pdfBuffer);
     } catch (error) {
       logger.error("Failed to generate PDF:", error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: "Failed to generate PDF",
       });

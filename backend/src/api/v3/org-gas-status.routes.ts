@@ -102,10 +102,10 @@ router.get(
         lastUpdated: new Date().toISOString(),
       };
 
-      res.json({ success: true, data: response });
+      return res.json({ success: true, data: response });
     } catch (error) {
       logger.error("Failed to fetch gas status:", error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: "Failed to fetch gas status",
       });

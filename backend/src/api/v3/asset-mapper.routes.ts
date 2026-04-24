@@ -73,13 +73,13 @@ router.get(
         mappings = filtered;
       }
 
-      res.json({
+      return res.json({
         success: true,
         data: mappings,
       });
     } catch (error) {
       logger.error("Failed to fetch asset mappings:", error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: "Failed to fetch asset mappings",
       });
@@ -107,7 +107,7 @@ router.get(
         });
       }
 
-      res.json({
+      return res.json({
         success: true,
         data: {
           asset,
@@ -116,7 +116,7 @@ router.get(
       });
     } catch (error) {
       logger.error("Failed to fetch available chains:", error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: "Failed to fetch available chains",
       });
@@ -144,13 +144,13 @@ router.get(
         });
       }
 
-      res.json({
+      return res.json({
         success: true,
         data: flowInfo,
       });
     } catch (error) {
       logger.error("Failed to fetch flow information:", error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error: "Failed to fetch flow information",
       });
