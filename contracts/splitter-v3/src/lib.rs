@@ -50,6 +50,21 @@ pub enum AdminAction {
     UpdateCollector(Address),
 }
 
+// ── #914: Multi-asset split types ────────────────────────────────────────────
+
+/// A single asset group for `split_multi_asset`: one SAC token address paired
+/// with its recipient list. Each group is processed atomically within the call.
+#[contracttype]
+#[derive(Clone)]
+pub struct AssetGroup {
+    /// The Stellar Asset Contract (SAC) token address for this group.
+    pub asset_address: Address,
+    /// Recipients and their share in basis points (must sum to 10_000 per group).
+    pub recipients: Vec<Recipient>,
+    /// Total amount of `asset_address` to disburse across `recipients`.
+    pub total_amount: i128,
+}
+
 #[contracttype]
 #[derive(Clone)]
 pub struct Proposal {
@@ -1086,6 +1101,81 @@ impl SplitterV3 {
 
         // #921: emit top-level split executed event after successful transfer loop
         emit_split_executed(&env, &sender, total_amount);
+
+        Ok(())
+    }
+
+    // ── #914: Multi-asset split ───────────────────────────────────────────────
+
+    /// Disburse multiple SAC tokens to their respective recipient lists in a
+    /// single transaction. Each `AssetGroup` is validated independently:
+    /// - `asset_address` must implement the Stellar token interface (pre-flight check)
+    /// - `recipients` bps must sum to 10_000
+    /// - `total_amount` must be positive
+    ///
+    /// All groups are processed atomically; if any transfer fails the whole tx reverts.
+    pub fn split_multi_asset(
+        env: Env,
+        sender: Address,
+        groups: Vec<AssetGroup>,
+    ) -> Result<(), Error> {
+        Self::_require_not_paused(&env)?;
+        sender.require_auth();
+
+        if groups.is_empty() {
+            return Err(Error::EmptyRecipients);
+        }
+
+        // ── Pre-flight: validate every group before any state change ──────────
+        for group in groups.iter() {
+            if group.total_amount <= 0 {
+                return Err(Error::InsufficientFunds);
+            }
+            // Verify asset_address implements TokenInterface (symbol() call).
+            Self::_validate_sac_asset(&env, &group.asset_address)?;
+
+            let mut bps_sum: u32 = 0;
+            for r in group.recipients.iter() {
+                bps_sum = bps_sum.checked_add(r.share_bps).ok_or(Error::Overflow)?;
+            }
+            if bps_sum != 10_000 {
+                return Err(Error::InvalidSplit);
+            }
+            if group.recipients.is_empty() {
+                return Err(Error::EmptyRecipients);
+            }
+        }
+
+        let contract_addr = env.current_contract_address();
+
+        // ── Execute each group atomically ─────────────────────────────────────
+        for group in groups.iter() {
+            let token_client = token::Client::new(&env, &group.asset_address);
+
+            // Pull total_amount from sender into contract.
+            let _ = token_client
+                .try_transfer(&sender, &contract_addr, &group.total_amount)
+                .map_err(|_| Error::TransferFailed)?;
+
+            // Distribute to recipients.
+            for r in group.recipients.iter() {
+                let amount = group
+                    .total_amount
+                    .checked_mul(r.share_bps as i128)
+                    .ok_or(Error::Overflow)?
+                    / 10_000;
+                if amount > 0 {
+                    let _ = token_client
+                        .try_transfer(&contract_addr, &r.address, &amount)
+                        .map_err(|_| Error::TransferFailed)?;
+                }
+            }
+
+            env.events().publish(
+                (symbol_short!("masset"), group.asset_address.clone()),
+                group.total_amount,
+            );
+        }
 
         Ok(())
     }
