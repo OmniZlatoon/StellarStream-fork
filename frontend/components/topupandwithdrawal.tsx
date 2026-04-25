@@ -435,7 +435,6 @@ export default function StreamModalsDemo() {
   const handleConfirm = async (amount: number, action: ModalAction) => {
     // Simulate network delay
     await new Promise((r) => setTimeout(r, 1800));
-    console.log(`${action}: ${amount} USDC`);
   };
 
   return (
