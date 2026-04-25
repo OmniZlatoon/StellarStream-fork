@@ -3,6 +3,7 @@
 import SecurityPrivacyPage from "@/components/settings/SecurityPrivacyPage";
 import GasManagementTile from "@/components/settings/GasManagementTile";
 import { OrganizationAvatarBrandingCard } from "@/components/settings/OrganizationAvatarBrandingCard";
+import { DeveloperSettingsCard } from "@/components/settings/DeveloperSettingsCard";
 
 export default function SettingsPage() {
   return (
@@ -23,6 +24,9 @@ export default function SettingsPage() {
 
       {/* ── Organization Branding (#797) ── */}
       <OrganizationAvatarBrandingCard />
+
+      {/* ── Developer Settings ── */}
+      <DeveloperSettingsCard />
 
       {/* ── Gas Management (#683) ── */}
       <GasManagementTile />

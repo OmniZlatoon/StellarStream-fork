@@ -33,8 +33,8 @@ function buildMockSplitLink(slug: string): SplitLinkPublicPayload {
     };
 }
 
-export async function GET(_req: NextRequest, { params }: { params: { slug?: string } }) {
-    const slug = params?.slug;
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+    const slug = (await params).slug;
     if (!slug) {
         return NextResponse.json({ error: "Missing split link identifier." }, { status: 400 });
     }
