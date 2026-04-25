@@ -10,6 +10,7 @@ export interface SplitLinkPublicPayload {
     trustScore: number;
     details: string;
     createdAt: string;
+    stellarAddress: string;
 }
 
 function buildMockSplitLink(slug: string): SplitLinkPublicPayload {
@@ -30,11 +31,12 @@ function buildMockSplitLink(slug: string): SplitLinkPublicPayload {
             ? "This payment is held for your wallet. Connect to claim the funds instantly."
             : "Your split is being prepared. Connect your wallet to monitor the claim status and view payment details.",
         createdAt: new Date().toISOString(),
+        stellarAddress: claimBased ? "GDTY3P5W4J52X3743Y3JXVHY2342" : "GATX2Y3X4J52X3743Y3JXVHY9999",
     };
 }
 
-export async function GET(_req: NextRequest, { params }: { params: { slug?: string } }) {
-    const slug = params?.slug;
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+    const slug = (await params).slug;
     if (!slug) {
         return NextResponse.json({ error: "Missing split link identifier." }, { status: 400 });
     }

@@ -50,13 +50,11 @@ export default function SettingsPage() {
         </>
       )}
 
-      {/* ── Security (#992) ── */}
-      {tab === "Security" && (
-        <>
-          <AdminQuorumSettings />
-          <SecurityPrivacyPage />
-        </>
-      )}
+      {/* ── Developer Settings ── */}
+      <DeveloperSettingsCard />
+
+      {/* ── Gas Management (#683) ── */}
+      <GasManagementTile />
 
       {/* ── Integrations (#996) ── */}
       {tab === "Integrations" && <WebhookIntegrationsCard />}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { OrganizationAvatar } from "@/components/organization-avatar";
 
 const DEFAULT_ORG_ID = "demo-org";
 
@@ -133,7 +134,7 @@ export function OrganizationAvatarBrandingCard() {
             // eslint-disable-next-line @next/next/no-img-element
             <img src={previewUrl} alt="Organization logo preview" className="h-full w-full rounded-2xl object-cover" />
           ) : (
-            <span className="text-xs text-white/40">Logo preview</span>
+            <OrganizationAvatar stellarAddress={orgId} size={160} className="rounded-2xl" />
           )}
         </div>
 

@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { TrendingUp, ShieldCheck } from "lucide-react";
 import { VerifiedNebulaBadge } from "@/components/VerifiedNebulaBadge";
+import { OrganizationAvatar } from "@/components/organization-avatar";
 
 // ─── Types (duplicated here to avoid importing from the server page) ──────────
 
@@ -70,12 +71,13 @@ export function ViewStreamClient({ stream }: { stream: StreamData }) {
     >
       {/* Verified Badge Header */}
       <div className="flex flex-col items-center justify-center -mt-12 mb-8 gap-3">
-        {stream.organization?.logo_url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={stream.organization.logo_url}
-            alt={`${stream.organization.name} logo`}
-            className="h-14 w-14 rounded-2xl border border-white/20 object-cover shadow-[0_0_24px_rgba(0,245,255,0.2)]"
+        {stream.organization && (
+          <OrganizationAvatar
+            logoUrl={stream.organization.logo_url}
+            stellarAddress={stream.organization.id}
+            size={56}
+            className="rounded-2xl border border-white/20 shadow-[0_0_24px_rgba(0,245,255,0.2)]"
+            altText={`${stream.organization.name} logo`}
           />
         )}
         <VerifiedNebulaBadge />

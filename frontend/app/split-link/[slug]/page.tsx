@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { ShieldCheck, ArrowRight, Loader2 } from "lucide-react";
 import { useWallet } from "@/lib/wallet-context";
+import { OrganizationAvatar } from "@/components/organization-avatar";
 
 interface SplitLinkInfo {
     slug: string;
@@ -15,6 +16,7 @@ interface SplitLinkInfo {
     trustScore: number;
     details: string;
     createdAt: string;
+    stellarAddress: string;
 }
 
 const statusStyles: Record<SplitLinkInfo["status"], string> = {
@@ -82,11 +84,27 @@ export default function SplitLinkLandingPage() {
                 <div className="glass-card border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.3)] mx-auto max-w-3xl p-8 md:p-12">
                     <div className="flex flex-col gap-6">
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                            <div>
-                                <p className="text-sm uppercase tracking-[0.32em] text-white/50">Split Link</p>
-                                <h1 className="mt-2 text-3xl font-black tracking-tight text-white sm:text-4xl">
-                                    {splitLink?.orgName ?? "Loading organization..."}
-                                </h1>
+                            <div className="flex items-center gap-4">
+                                {splitLink && (
+                                    <OrganizationAvatar
+                                        stellarAddress={splitLink.stellarAddress}
+                                        size={48}
+                                        className="rounded-xl border border-white/20 shadow-[0_0_16px_rgba(0,245,255,0.15)] hidden sm:block"
+                                    />
+                                )}
+                                <div>
+                                    <p className="text-sm uppercase tracking-[0.32em] text-white/50">Split Link</p>
+                                    <h1 className="mt-2 text-3xl font-black tracking-tight text-white sm:text-4xl flex items-center gap-3">
+                                        {splitLink && (
+                                            <OrganizationAvatar
+                                                stellarAddress={splitLink.stellarAddress}
+                                                size={32}
+                                                className="rounded-lg sm:hidden border border-white/20"
+                                            />
+                                        )}
+                                        {splitLink?.orgName ?? "Loading organization..."}
+                                    </h1>
+                                </div>
                             </div>
                             <div className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${trustBadgeClass}`}>
                                 <ShieldCheck className="h-4 w-4" />
