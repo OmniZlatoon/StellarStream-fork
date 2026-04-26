@@ -6,6 +6,7 @@ import GasManagementTile from "@/components/settings/GasManagementTile";
 import { OrganizationAvatarBrandingCard } from "@/components/settings/OrganizationAvatarBrandingCard";
 import { AdminQuorumSettings } from "@/components/settings/AdminQuorumSettings";
 import { WebhookIntegrationsCard } from "@/components/settings/WebhookIntegrationsCard";
+import GasLedger from "@/components/gasledger";
 
 const TABS = ["General", "Security", "Integrations"] as const;
 type Tab = (typeof TABS)[number];
@@ -47,6 +48,8 @@ export default function SettingsPage() {
         <>
           <OrganizationAvatarBrandingCard />
           <GasManagementTile />
+          {/* Gas Ledger — transaction history (#1023) */}
+          <GasLedger walletAddress="demo-wallet" />
         </>
       )}
 
